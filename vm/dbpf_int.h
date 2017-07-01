@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef DBPF_INT_H
-#define DBPF_INT_H
+#ifndef _DBPF_INT_H_
+#define _DBPF_INT_H_
 
 #include <dbpf.h>
 #include "ebpf.h"

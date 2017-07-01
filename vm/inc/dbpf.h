@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef DBPF_H
-#define DBPF_H
+#ifndef _DBPF_H_
+#define _DBPF_H_
 
 #include <stdint.h>
 #include <stddef.h>
