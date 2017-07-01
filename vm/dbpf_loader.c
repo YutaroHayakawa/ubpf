@@ -53,7 +53,7 @@ bounds_check(struct bounds *bounds, uint64_t offset, uint64_t size)
 }
 
 int
-dbpf_load_elf(struct dbpf_vm *vm, const void *elf, size_t elf_size, char **errmsg)
+dbpf_load_elf(struct dbpf_vm *vm, const void *elf, size_t elf_size)
 {
     struct bounds b = { .base=elf, .size=elf_size };
     void *text_copy = NULL;
@@ -61,48 +61,48 @@ dbpf_load_elf(struct dbpf_vm *vm, const void *elf, size_t elf_size, char **errms
 
     const Elf64_Ehdr *ehdr = bounds_check(&b, 0, sizeof(*ehdr));
     if (!ehdr) {
-        *errmsg = dbpf_error("not enough data for ELF header");
+        dbpf_error("not enough data for ELF header");
         goto error;
     }
 
     if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG)) {
-        *errmsg = dbpf_error("wrong magic");
+        dbpf_error("wrong magic");
         goto error;
     }
 
     if (ehdr->e_ident[EI_CLASS] != ELFCLASS64) {
-        *errmsg = dbpf_error("wrong class");
+        dbpf_error("wrong class");
         goto error;
     }
 
     if (ehdr->e_ident[EI_DATA] != ELFDATA2LSB) {
-        *errmsg = dbpf_error("wrong byte order");
+        dbpf_error("wrong byte order");
         goto error;
     }
 
     if (ehdr->e_ident[EI_VERSION] != 1) {
-        *errmsg = dbpf_error("wrong version");
+        dbpf_error("wrong version");
         goto error;
     }
 
     if (ehdr->e_ident[EI_OSABI] != ELFOSABI_NONE) {
-        *errmsg = dbpf_error("wrong OS ABI");
+        dbpf_error("wrong OS ABI");
         goto error;
     }
 
     if (ehdr->e_type != ET_REL) {
-        *errmsg = dbpf_error("wrong type, expected relocatable");
+        dbpf_error("wrong type, expected relocatable");
         goto error;
     }
 
     if (ehdr->e_machine != EM_NONE && ehdr->e_machine != EM_BPF) {
-        *errmsg = dbpf_error("wrong machine, expected none or BPF, got %d",
+        dbpf_error("wrong machine, expected none or BPF, got %d",
                              ehdr->e_machine);
         goto error;
     }
 
     if (ehdr->e_shnum > MAX_SECTIONS) {
-        *errmsg = dbpf_error("too many sections");
+        dbpf_error("too many sections");
         goto error;
     }
 
@@ -111,13 +111,13 @@ dbpf_load_elf(struct dbpf_vm *vm, const void *elf, size_t elf_size, char **errms
     for (i = 0; i < ehdr->e_shnum; i++) {
         const Elf64_Shdr *shdr = bounds_check(&b, ehdr->e_shoff + i*ehdr->e_shentsize, sizeof(*shdr));
         if (!shdr) {
-            *errmsg = dbpf_error("bad section header offset or size");
+            dbpf_error("bad section header offset or size");
             goto error;
         }
 
         const void *data = bounds_check(&b, shdr->sh_offset, shdr->sh_size);
         if (!data) {
-            *errmsg = dbpf_error("bad section offset or size");
+            dbpf_error("bad section offset or size");
             goto error;
         }
 
@@ -138,7 +138,7 @@ dbpf_load_elf(struct dbpf_vm *vm, const void *elf, size_t elf_size, char **errms
     }
 
     if (!text_shndx) {
-        *errmsg = dbpf_error("text section not found");
+        dbpf_error("text section not found");
         goto error;
     }
 
@@ -147,7 +147,7 @@ dbpf_load_elf(struct dbpf_vm *vm, const void *elf, size_t elf_size, char **errms
     /* May need to modify text for relocations, so make a copy */
     text_copy = malloc(text->size);
     if (!text_copy) {
-        *errmsg = dbpf_error("failed to allocate memory");
+        dbpf_error("failed to allocate memory");
         goto error;
     }
     memcpy(text_copy, text->data, text->size);
@@ -164,7 +164,7 @@ dbpf_load_elf(struct dbpf_vm *vm, const void *elf, size_t elf_size, char **errms
         const Elf64_Rel *rs = rel->data;
 
         if (rel->shdr->sh_link >= ehdr->e_shnum) {
-            *errmsg = dbpf_error("bad symbol table section index");
+            dbpf_error("bad symbol table section index");
             goto error;
         }
 
@@ -173,7 +173,7 @@ dbpf_load_elf(struct dbpf_vm *vm, const void *elf, size_t elf_size, char **errms
         uint32_t num_syms = symtab->size/sizeof(syms[0]);
 
         if (symtab->shdr->sh_link >= ehdr->e_shnum) {
-            *errmsg = dbpf_error("bad string table section index");
+            dbpf_error("bad string table section index");
             goto error;
         }
 
@@ -185,33 +185,33 @@ dbpf_load_elf(struct dbpf_vm *vm, const void *elf, size_t elf_size, char **errms
             const Elf64_Rel *r = &rs[j];
 
             if (ELF64_R_TYPE(r->r_info) != 2) {
-                *errmsg = dbpf_error("bad relocation type %u", ELF64_R_TYPE(r->r_info));
+                dbpf_error("bad relocation type %lu", ELF64_R_TYPE(r->r_info));
                 goto error;
             }
 
             uint32_t sym_idx = ELF64_R_SYM(r->r_info);
             if (sym_idx >= num_syms) {
-                *errmsg = dbpf_error("bad symbol index");
+                dbpf_error("bad symbol index");
                 goto error;
             }
 
             const Elf64_Sym *sym = &syms[sym_idx];
 
             if (sym->st_name >= strtab->size) {
-                *errmsg = dbpf_error("bad symbol name");
+                dbpf_error("bad symbol name");
                 goto error;
             }
 
             const char *sym_name = strings + sym->st_name;
 
             if (r->r_offset + 8 > text->size) {
-                *errmsg = dbpf_error("bad relocation offset");
+                dbpf_error("bad relocation offset");
                 goto error;
             }
 
             unsigned int imm = dbpf_lookup_registered_function(vm, sym_name);
             if (imm == -1) {
-                *errmsg = dbpf_error("function '%s' not found", sym_name);
+                dbpf_error("function '%s' not found", sym_name);
                 goto error;
             }
 
@@ -219,7 +219,7 @@ dbpf_load_elf(struct dbpf_vm *vm, const void *elf, size_t elf_size, char **errms
         }
     }
 
-    int rv = dbpf_load(vm, text_copy, sections[text_shndx].size, errmsg);
+    int rv = dbpf_load(vm, text_copy, sections[text_shndx].size);
     free(text_copy);
     return rv;
 

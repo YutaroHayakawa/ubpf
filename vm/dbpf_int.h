@@ -17,6 +17,8 @@
 #ifndef _DBPF_INT_H_
 #define _DBPF_INT_H_
 
+#include <sys/time.h>
+
 #include <dbpf.h>
 #include "ebpf.h"
 
@@ -35,7 +37,14 @@ struct dbpf_vm {
     const char **ext_func_names;
 };
 
-char *dbpf_error(const char *fmt, ...);
+#define dbpf_error(_fmt, ...)            \
+  do {              \
+    struct timeval _t0;        \
+    gettimeofday(&_t0, NULL);      \
+    printf("%03d.%06d %s [%d] " _fmt "\n",  \
+        (int)(_t0.tv_sec % 1000), (int)_t0.tv_usec,  \
+        __FUNCTION__, __LINE__, ##__VA_ARGS__);  \
+  } while (0)
 unsigned int dbpf_lookup_registered_function(struct dbpf_vm *vm, const char *name);
 
 #endif

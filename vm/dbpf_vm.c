@@ -28,7 +28,7 @@
 
 #define MAX_EXT_FUNCS 64
 
-static bool validate(const struct dbpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_insts, char **errmsg);
+static bool validate(const struct dbpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_insts);
 static bool bounds_check(void *addr, int size, const char *type, uint16_t cur_pc, void *mem, size_t mem_len, void *stack);
 
 struct dbpf_vm *
@@ -92,27 +92,25 @@ dbpf_lookup_registered_function(struct dbpf_vm *vm, const char *name)
 }
 
 int
-dbpf_load(struct dbpf_vm *vm, const void *code, uint32_t code_len, char **errmsg)
+dbpf_load(struct dbpf_vm *vm, const void *code, uint32_t code_len)
 {
-    *errmsg = NULL;
-
     if (vm->insts) {
-        *errmsg = dbpf_error("code has already been loaded into this VM");
+        dbpf_error("code has already been loaded into this VM");
         return -1;
     }
 
     if (code_len % 8 != 0) {
-        *errmsg = dbpf_error("code_len must be a multiple of 8");
+        dbpf_error("code_len must be a multiple of 8");
         return -1;
     }
 
-    if (!validate(vm, code, code_len/8, errmsg)) {
+    if (!validate(vm, code, code_len/8)) {
         return -1;
     }
 
     vm->insts = malloc(code_len);
     if (vm->insts == NULL) {
-        *errmsg = dbpf_error("out of memory");
+        dbpf_error("out of memory");
         return -1;
     }
 
@@ -179,7 +177,7 @@ dbpf_exec(const struct dbpf_vm *vm, void *mem, size_t mem_len)
             break;
         case EBPF_OP_DIV_REG:
             if (reg[inst.src] == 0) {
-                fprintf(stderr, "dBPF error: division by zero at PC %u\n", cur_pc);
+                dbpf_error("dBPF error: division by zero at PC %u\n", cur_pc);
                 return UINT64_MAX;
             }
             reg[inst.dst] = u32(reg[inst.dst]) / u32(reg[inst.src]);
@@ -227,7 +225,7 @@ dbpf_exec(const struct dbpf_vm *vm, void *mem, size_t mem_len)
             break;
         case EBPF_OP_MOD_REG:
             if (reg[inst.src] == 0) {
-                fprintf(stderr, "dBPF error: division by zero at PC %u\n", cur_pc);
+                dbpf_error("dBPF error: division by zero at PC %u\n", cur_pc);
                 return UINT64_MAX;
             }
             reg[inst.dst] = u32(reg[inst.dst]) % u32(reg[inst.src]);
@@ -300,7 +298,7 @@ dbpf_exec(const struct dbpf_vm *vm, void *mem, size_t mem_len)
             break;
         case EBPF_OP_DIV64_REG:
             if (reg[inst.src] == 0) {
-                fprintf(stderr, "dBPF error: division by zero at PC %u\n", cur_pc);
+                dbpf_error("dBPF error: division by zero at PC %u\n", cur_pc);
                 return UINT64_MAX;
             }
             reg[inst.dst] /= reg[inst.src];
@@ -337,7 +335,7 @@ dbpf_exec(const struct dbpf_vm *vm, void *mem, size_t mem_len)
             break;
         case EBPF_OP_MOD64_REG:
             if (reg[inst.src] == 0) {
-                fprintf(stderr, "dBPF error: division by zero at PC %u\n", cur_pc);
+                dbpf_error("dBPF error: division by zero at PC %u\n", cur_pc);
                 return UINT64_MAX;
             }
             reg[inst.dst] %= reg[inst.src];
@@ -517,15 +515,15 @@ dbpf_exec(const struct dbpf_vm *vm, void *mem, size_t mem_len)
 }
 
 static bool
-validate(const struct dbpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_insts, char **errmsg)
+validate(const struct dbpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_insts)
 {
     if (num_insts >= MAX_INSTS) {
-        *errmsg = dbpf_error("too many instructions (max %u)", MAX_INSTS);
+        dbpf_error("too many instructions (max %u)", MAX_INSTS);
         return false;
     }
 
     if (num_insts == 0 || insts[num_insts-1].opcode != EBPF_OP_EXIT) {
-        *errmsg = dbpf_error("no exit at end of instructions");
+        dbpf_error("no exit at end of instructions");
         return false;
     }
 
@@ -563,7 +561,7 @@ validate(const struct dbpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_i
         case EBPF_OP_LE:
         case EBPF_OP_BE:
             if (inst.imm != 16 && inst.imm != 32 && inst.imm != 64) {
-                *errmsg = dbpf_error("invalid endian immediate at PC %d", i);
+                dbpf_error("invalid endian immediate at PC %d", i);
                 return false;
             }
             break;
@@ -612,7 +610,7 @@ validate(const struct dbpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_i
 
         case EBPF_OP_LDDW:
             if (i + 1 >= num_insts || insts[i+1].opcode != 0) {
-                *errmsg = dbpf_error("incomplete lddw at PC %d", i);
+                dbpf_error("incomplete lddw at PC %d", i);
                 return false;
             }
             i++; /* Skip next instruction */
@@ -634,26 +632,26 @@ validate(const struct dbpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_i
         case EBPF_OP_JSGE_IMM:
         case EBPF_OP_JSGE_REG:
             if (inst.offset == -1) {
-                *errmsg = dbpf_error("infinite loop at PC %d", i);
+                dbpf_error("infinite loop at PC %d", i);
                 return false;
             }
             int new_pc = i + 1 + inst.offset;
             if (new_pc < 0 || new_pc >= num_insts) {
-                *errmsg = dbpf_error("jump out of bounds at PC %d", i);
+                dbpf_error("jump out of bounds at PC %d", i);
                 return false;
             } else if (insts[new_pc].opcode == 0) {
-                *errmsg = dbpf_error("jump to middle of lddw at PC %d", i);
+                dbpf_error("jump to middle of lddw at PC %d", i);
                 return false;
             }
             break;
 
         case EBPF_OP_CALL:
             if (inst.imm < 0 || inst.imm >= MAX_EXT_FUNCS) {
-                *errmsg = dbpf_error("invalid call immediate at PC %d", i);
+                dbpf_error("invalid call immediate at PC %d", i);
                 return false;
             }
             if (!vm->ext_funcs[inst.imm]) {
-                *errmsg = dbpf_error("call to nonexistent function %u at PC %d", inst.imm, i);
+                dbpf_error("call to nonexistent function %u at PC %d", inst.imm, i);
                 return false;
             }
             break;
@@ -666,23 +664,23 @@ validate(const struct dbpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_i
         case EBPF_OP_DIV64_IMM:
         case EBPF_OP_MOD64_IMM:
             if (inst.imm == 0) {
-                *errmsg = dbpf_error("division by zero at PC %d", i);
+                dbpf_error("division by zero at PC %d", i);
                 return false;
             }
             break;
 
         default:
-            *errmsg = dbpf_error("unknown opcode 0x%02x at PC %d", inst.opcode, i);
+            dbpf_error("unknown opcode 0x%02x at PC %d", inst.opcode, i);
             return false;
         }
 
         if (inst.src > 10) {
-            *errmsg = dbpf_error("invalid source register at PC %d", i);
+            dbpf_error("invalid source register at PC %d", i);
             return false;
         }
 
         if (inst.dst > 9 && !(store && inst.dst == 10)) {
-            *errmsg = dbpf_error("invalid destination register at PC %d", i);
+            dbpf_error("invalid destination register at PC %d", i);
             return false;
         }
     }
@@ -700,21 +698,8 @@ bounds_check(void *addr, int size, const char *type, uint16_t cur_pc, void *mem,
         /* Stack access */
         return true;
     } else {
-        fprintf(stderr, "dBPF error: out of bounds memory %s at PC %u, addr %p, size %d\n", type, cur_pc, addr, size);
-        fprintf(stderr, "mem %p/%zd stack %p/%d\n", mem, mem_len, stack, STACK_SIZE);
+        dbpf_error("dBPF error: out of bounds memory %s at PC %u, addr %p, size %d\n", type, cur_pc, addr, size);
+        dbpf_error("mem %p/%zd stack %p/%d\n", mem, mem_len, stack, STACK_SIZE);
         return false;
     }
-}
-
-char *
-dbpf_error(const char *fmt, ...)
-{
-    char *msg;
-    va_list ap;
-    va_start(ap, fmt);
-    if (vasprintf(&msg, fmt, ap) < 0) {
-        msg = NULL;
-    }
-    va_end(ap);
-    return msg;
 }

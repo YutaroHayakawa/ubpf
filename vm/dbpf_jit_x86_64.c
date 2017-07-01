@@ -80,7 +80,7 @@ dbpf_set_register_offset(int x)
 }
 
 static int
-translate(struct dbpf_vm *vm, struct jit_state *state, char **errmsg)
+translate(struct dbpf_vm *vm, struct jit_state *state)
 {
     emit_push(state, RBP);
     emit_push(state, RBX);
@@ -383,7 +383,7 @@ translate(struct dbpf_vm *vm, struct jit_state *state, char **errmsg)
         }
 
         default:
-            *errmsg = dbpf_error("Unknown instruction at PC %d: opcode %02x", i, inst.opcode);
+            dbpf_error("Unknown instruction at PC %d: opcode %02x", i, inst.opcode);
             return -1;
         }
     }
@@ -507,7 +507,7 @@ resolve_jumps(struct dbpf_vm *vm, struct jit_state *state)
 }
 
 dbpf_jit_fn
-dbpf_compile(struct dbpf_vm *vm, char **errmsg)
+dbpf_compile(struct dbpf_vm *vm)
 {
     void *jitted = NULL;
     size_t jitted_size;
@@ -517,10 +517,8 @@ dbpf_compile(struct dbpf_vm *vm, char **errmsg)
         return vm->jitted;
     }
 
-    *errmsg = NULL;
-
     if (!vm->insts) {
-        *errmsg = dbpf_error("code has not been loaded into this VM");
+        dbpf_error("code has not been loaded into this VM");
         return NULL;
     }
 
@@ -531,7 +529,7 @@ dbpf_compile(struct dbpf_vm *vm, char **errmsg)
     state.jumps = calloc(MAX_INSTS, sizeof(state.jumps[0]));
     state.num_jumps = 0;
 
-    if (translate(vm, &state, errmsg) < 0) {
+    if (translate(vm, &state) < 0) {
         goto out;
     }
 
@@ -540,14 +538,14 @@ dbpf_compile(struct dbpf_vm *vm, char **errmsg)
     jitted_size = state.offset;
     jitted = mmap(0, jitted_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (jitted == MAP_FAILED) {
-        *errmsg = dbpf_error("internal dBPF error: mmap failed: %s\n", strerror(errno));
+        dbpf_error("internal dBPF error: mmap failed: %s\n", strerror(errno));
         goto out;
     }
 
     memcpy(jitted, state.buf, jitted_size);
 
     if (mprotect(jitted, jitted_size, PROT_READ | PROT_EXEC) < 0) {
-        *errmsg = dbpf_error("internal dBPF error: mprotect failed: %s\n", strerror(errno));
+        dbpf_error("internal dBPF error: mprotect failed: %s\n", strerror(errno));
         goto out;
     }
 

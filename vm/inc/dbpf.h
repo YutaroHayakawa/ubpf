@@ -51,7 +51,7 @@ int dbpf_register(struct dbpf_vm *vm, unsigned int idx, const char *name, void *
  * Returns 0 on success, -1 on error. In case of error a pointer to the error
  * message will be stored in 'errmsg' and should be freed by the caller.
  */
-int dbpf_load(struct dbpf_vm *vm, const void *code, uint32_t code_len, char **errmsg);
+int dbpf_load(struct dbpf_vm *vm, const void *code, uint32_t code_len);
 
 /*
  * Load code from an ELF file
@@ -69,10 +69,10 @@ int dbpf_load(struct dbpf_vm *vm, const void *code, uint32_t code_len, char **er
  * Returns 0 on success, -1 on error. In case of error a pointer to the error
  * message will be stored in 'errmsg' and should be freed by the caller.
  */
-int dbpf_load_elf(struct dbpf_vm *vm, const void *elf, size_t elf_len, char **errmsg);
+int dbpf_load_elf(struct dbpf_vm *vm, const void *elf, size_t elf_len);
 
 uint64_t dbpf_exec(const struct dbpf_vm *vm, void *mem, size_t mem_len);
 
-dbpf_jit_fn dbpf_compile(struct dbpf_vm *vm, char **errmsg);
+dbpf_jit_fn dbpf_compile(struct dbpf_vm *vm);
 
 #endif
