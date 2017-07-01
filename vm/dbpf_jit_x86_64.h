@@ -18,8 +18,8 @@
  * Generic x86-64 code generation functions
  */
 
-#ifndef UBPF_JIT_X86_64_H
-#define UBPF_JIT_X86_64_H
+#ifndef DBPF_JIT_X86_64_H
+#define DBPF_JIT_X86_64_H
 
 #include <assert.h>
 #include <stdint.h>

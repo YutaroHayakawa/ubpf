@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef UBPF_H
-#define UBPF_H
+#ifndef DBPF_H
+#define DBPF_H
 
 #include <stdint.h>
 #include <stddef.h>
 
-struct ubpf_vm;
-typedef uint64_t (*ubpf_jit_fn)(void *mem, size_t mem_len);
+struct dbpf_vm;
+typedef uint64_t (*dbpf_jit_fn)(void *mem, size_t mem_len);
 
-struct ubpf_vm *ubpf_create(void);
-void ubpf_destroy(struct ubpf_vm *vm);
+struct dbpf_vm *dbpf_create(void);
+void dbpf_destroy(struct dbpf_vm *vm);
 
 /*
  * Register an external function
@@ -37,12 +37,12 @@ void ubpf_destroy(struct ubpf_vm *vm);
  *
  * Returns 0 on success, -1 on error.
  */
-int ubpf_register(struct ubpf_vm *vm, unsigned int idx, const char *name, void *fn);
+int dbpf_register(struct dbpf_vm *vm, unsigned int idx, const char *name, void *fn);
 
 /*
  * Load code into a VM
  *
- * This must be done before calling ubpf_exec or ubpf_compile and after
+ * This must be done before calling dbpf_exec or dbpf_compile and after
  * registering all functions.
  *
  * 'code' should point to eBPF bytecodes and 'code_len' should be the size in
@@ -51,12 +51,12 @@ int ubpf_register(struct ubpf_vm *vm, unsigned int idx, const char *name, void *
  * Returns 0 on success, -1 on error. In case of error a pointer to the error
  * message will be stored in 'errmsg' and should be freed by the caller.
  */
-int ubpf_load(struct ubpf_vm *vm, const void *code, uint32_t code_len, char **errmsg);
+int dbpf_load(struct dbpf_vm *vm, const void *code, uint32_t code_len, char **errmsg);
 
 /*
  * Load code from an ELF file
  *
- * This must be done before calling ubpf_exec or ubpf_compile and after
+ * This must be done before calling dbpf_exec or dbpf_compile and after
  * registering all functions.
  *
  * 'elf' should point to a copy of an ELF file in memory and 'elf_len' should
@@ -69,10 +69,10 @@ int ubpf_load(struct ubpf_vm *vm, const void *code, uint32_t code_len, char **er
  * Returns 0 on success, -1 on error. In case of error a pointer to the error
  * message will be stored in 'errmsg' and should be freed by the caller.
  */
-int ubpf_load_elf(struct ubpf_vm *vm, const void *elf, size_t elf_len, char **errmsg);
+int dbpf_load_elf(struct dbpf_vm *vm, const void *elf, size_t elf_len, char **errmsg);
 
-uint64_t ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len);
+uint64_t dbpf_exec(const struct dbpf_vm *vm, void *mem, size_t mem_len);
 
-ubpf_jit_fn ubpf_compile(struct ubpf_vm *vm, char **errmsg);
+dbpf_jit_fn dbpf_compile(struct dbpf_vm *vm, char **errmsg);
 
 #endif
