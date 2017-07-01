@@ -179,7 +179,7 @@ dbpf_exec(const struct dbpf_vm *vm, void *mem, size_t mem_len)
             break;
         case EBPF_OP_DIV_REG:
             if (reg[inst.src] == 0) {
-                fprintf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
+                fprintf(stderr, "dBPF error: division by zero at PC %u\n", cur_pc);
                 return UINT64_MAX;
             }
             reg[inst.dst] = u32(reg[inst.dst]) / u32(reg[inst.src]);
@@ -227,7 +227,7 @@ dbpf_exec(const struct dbpf_vm *vm, void *mem, size_t mem_len)
             break;
         case EBPF_OP_MOD_REG:
             if (reg[inst.src] == 0) {
-                fprintf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
+                fprintf(stderr, "dBPF error: division by zero at PC %u\n", cur_pc);
                 return UINT64_MAX;
             }
             reg[inst.dst] = u32(reg[inst.dst]) % u32(reg[inst.src]);
@@ -300,7 +300,7 @@ dbpf_exec(const struct dbpf_vm *vm, void *mem, size_t mem_len)
             break;
         case EBPF_OP_DIV64_REG:
             if (reg[inst.src] == 0) {
-                fprintf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
+                fprintf(stderr, "dBPF error: division by zero at PC %u\n", cur_pc);
                 return UINT64_MAX;
             }
             reg[inst.dst] /= reg[inst.src];
@@ -337,7 +337,7 @@ dbpf_exec(const struct dbpf_vm *vm, void *mem, size_t mem_len)
             break;
         case EBPF_OP_MOD64_REG:
             if (reg[inst.src] == 0) {
-                fprintf(stderr, "uBPF error: division by zero at PC %u\n", cur_pc);
+                fprintf(stderr, "dBPF error: division by zero at PC %u\n", cur_pc);
                 return UINT64_MAX;
             }
             reg[inst.dst] %= reg[inst.src];
@@ -700,7 +700,7 @@ bounds_check(void *addr, int size, const char *type, uint16_t cur_pc, void *mem,
         /* Stack access */
         return true;
     } else {
-        fprintf(stderr, "uBPF error: out of bounds memory %s at PC %u, addr %p, size %d\n", type, cur_pc, addr, size);
+        fprintf(stderr, "dBPF error: out of bounds memory %s at PC %u, addr %p, size %d\n", type, cur_pc, addr, size);
         fprintf(stderr, "mem %p/%zd stack %p/%d\n", mem, mem_len, stack, STACK_SIZE);
         return false;
     }

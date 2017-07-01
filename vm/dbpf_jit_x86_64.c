@@ -408,7 +408,7 @@ translate(struct dbpf_vm *vm, struct jit_state *state, char **errmsg)
     emit1(state, 0xc3); /* ret */
 
     /* Division by zero handler */
-    const char *div_by_zero_fmt = "uBPF error: division by zero at PC %u\n";
+    const char *div_by_zero_fmt = "dBPF error: division by zero at PC %u\n";
     state->div_by_zero_loc = state->offset;
     emit_load_imm(state, RDI, (uintptr_t)stderr);
     emit_load_imm(state, RSI, (uintptr_t)div_by_zero_fmt);
@@ -540,14 +540,14 @@ dbpf_compile(struct dbpf_vm *vm, char **errmsg)
     jitted_size = state.offset;
     jitted = mmap(0, jitted_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (jitted == MAP_FAILED) {
-        *errmsg = dbpf_error("internal uBPF error: mmap failed: %s\n", strerror(errno));
+        *errmsg = dbpf_error("internal dBPF error: mmap failed: %s\n", strerror(errno));
         goto out;
     }
 
     memcpy(jitted, state.buf, jitted_size);
 
     if (mprotect(jitted, jitted_size, PROT_READ | PROT_EXEC) < 0) {
-        *errmsg = dbpf_error("internal uBPF error: mprotect failed: %s\n", strerror(errno));
+        *errmsg = dbpf_error("internal dBPF error: mprotect failed: %s\n", strerror(errno));
         goto out;
     }
 

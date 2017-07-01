@@ -26,11 +26,11 @@
 #include <errno.h>
 #include <elf.h>
 #include <math.h>
-#include "ubpf.h"
+#include "dbpf.h"
 
-void ubpf_set_register_offset(int x);
+void dbpf_set_register_offset(int x);
 static void *readfile(const char *path, size_t maxlen, size_t *len);
-static void register_functions(struct ubpf_vm *vm);
+static void register_functions(struct dbpf_vm *vm);
 
 static void usage(const char *name)
 {
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
             jit = true;
             break;
         case 'r':
-            ubpf_set_register_offset(atoi(optarg));
+            dbpf_set_register_offset(atoi(optarg));
             break;
         case 'h':
             usage(argv[0]);
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
         }
     }
 
-    struct ubpf_vm *vm = ubpf_create();
+    struct dbpf_vm *vm = dbpf_create();
     if (!vm) {
         fprintf(stderr, "Failed to create VM\n");
         return 1;
@@ -114,9 +114,9 @@ int main(int argc, char **argv)
     char *errmsg;
     int rv;
     if (elf) {
-	rv = ubpf_load_elf(vm, code, code_len, &errmsg);
+	rv = dbpf_load_elf(vm, code, code_len, &errmsg);
     } else {
-	rv = ubpf_load(vm, code, code_len, &errmsg);
+	rv = dbpf_load(vm, code, code_len, &errmsg);
     }
 
     free(code);
@@ -124,14 +124,14 @@ int main(int argc, char **argv)
     if (rv < 0) {
         fprintf(stderr, "Failed to load code: %s\n", errmsg);
         free(errmsg);
-        ubpf_destroy(vm);
+        dbpf_destroy(vm);
         return 1;
     }
 
     uint64_t ret;
 
     if (jit) {
-        ubpf_jit_fn fn = ubpf_compile(vm, &errmsg);
+        dbpf_jit_fn fn = dbpf_compile(vm, &errmsg);
         if (fn == NULL) {
             fprintf(stderr, "Failed to compile: %s\n", errmsg);
             free(errmsg);
@@ -139,12 +139,12 @@ int main(int argc, char **argv)
         }
         ret = fn(mem, mem_len);
     } else {
-        ret = ubpf_exec(vm, mem, mem_len);
+        ret = dbpf_exec(vm, mem, mem_len);
     }
 
     printf("0x%"PRIx64"\n", ret);
 
-    ubpf_destroy(vm);
+    dbpf_destroy(vm);
 
     return 0;
 }
@@ -226,11 +226,11 @@ sqrti(uint32_t x)
 }
 
 static void
-register_functions(struct ubpf_vm *vm)
+register_functions(struct dbpf_vm *vm)
 {
-    ubpf_register(vm, 0, "gather_bytes", gather_bytes);
-    ubpf_register(vm, 1, "memfrob", memfrob);
-    ubpf_register(vm, 2, "trash_registers", trash_registers);
-    ubpf_register(vm, 3, "sqrti", sqrti);
-    ubpf_register(vm, 4, "strcmp_ext", strcmp);
+    dbpf_register(vm, 0, "gather_bytes", gather_bytes);
+    dbpf_register(vm, 1, "memfrob", memfrob);
+    dbpf_register(vm, 2, "trash_registers", trash_registers);
+    dbpf_register(vm, 3, "sqrti", sqrti);
+    dbpf_register(vm, 4, "strcmp_ext", strcmp);
 }
