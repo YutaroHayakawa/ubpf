@@ -25,14 +25,12 @@ CFLAGS += -fsanitize=address
 LDFLAGS += -fsanitize=address
 endif
 
-all: libdbpf.a test
+all: libdbpf.a
 
 dbpf_jit_x86_64.o: dbpf_jit_x86_64.c dbpf_jit_x86_64.h
 
 libdbpf.a: dbpf_vm.o dbpf_jit_x86_64.o dbpf_loader.o
 	ar rc $@ $^
-
-test: test.o libdbpf.a
 
 clean:
 	rm -f test libdbpf.a *.o

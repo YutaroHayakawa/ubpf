@@ -24,6 +24,8 @@
 #include "dbpf_int.h"
 #include <elf.h>
 
+#include "dbpf_common.h"
+
 #define MAX_SECTIONS 32
 
 #ifndef EM_BPF

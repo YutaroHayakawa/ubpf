@@ -5,7 +5,7 @@
 
 #elif defined(__FreeBSD__)
 
-#include <machine/endian.h>
+#include <sys/endian.h>
 
 #else
 
