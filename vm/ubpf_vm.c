@@ -24,9 +24,6 @@
 #include <sys/mman.h>
 #include "ubpf_int.h"
 
-#define MAX_EXT_FUNCS 64
-
-static bool validate(const struct ubpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_insts, char **errmsg);
 static bool bounds_check(void *addr, int size, const char *type, uint16_t cur_pc, void *mem, size_t mem_len, void *stack);
 
 struct ubpf_vm *
@@ -514,6 +511,7 @@ ubpf_exec(const struct ubpf_vm *vm, void *mem, size_t mem_len)
     }
 }
 
+/*
 static bool
 validate(const struct ubpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_insts, char **errmsg)
 {
@@ -613,7 +611,7 @@ validate(const struct ubpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_i
                 *errmsg = ubpf_error("incomplete lddw at PC %d", i);
                 return false;
             }
-            i++; /* Skip next instruction */
+            i++; // Skip next instruction
             break;
 
         case EBPF_OP_JA:
@@ -687,6 +685,7 @@ validate(const struct ubpf_vm *vm, const struct ebpf_inst *insts, uint32_t num_i
 
     return true;
 }
+*/
 
 static bool
 bounds_check(void *addr, int size, const char *type, uint16_t cur_pc, void *mem, size_t mem_len, void *stack)
