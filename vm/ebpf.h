@@ -29,10 +29,26 @@ struct ebpf_inst {
     int32_t imm;
 };
 
+enum {
+  EBPF_REG0 = 0,
+  EBPF_REG1,
+  EBPF_REG2,
+  EBPF_REG3,
+  EBPF_REG4,
+  EBPF_REG5,
+  EBPF_REG6,
+  EBPF_REG7,
+  EBPF_REG8,
+  EBPF_REG9,
+  EBPF_REG10,
+  __EBPF_REG_MAX
+};
+
 #define EBPF_CLS_MASK 0x07
 #define EBPF_ALU_OP_MASK 0xf0
 
 #define EBPF_CLS(op) ((op) & EBPF_CLS_MASK)
+#define EBPF_OP(op) ((op) & EBPF_ALU_OP_MASK)
 
 #define EBPF_CLS_LD 0x00
 #define EBPF_CLS_LDX 0x01

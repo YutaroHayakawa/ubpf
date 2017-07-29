@@ -155,9 +155,7 @@ enum ubpf_reg_type {
   PTR_TO_STACK,
   CONST_IMM,
   PTR_TO_NM_BDG_FWD,
-  PTR_TO_FT_BUF,
-  PTR_TO_FT_LEN,
-  PTR_TO_DST_RING,
+  PTR_TO_DST_RING_IDX,
   PTR_TO_NM_VP_ADAPTER
 };
 
@@ -187,9 +185,12 @@ static void init_reg_state(struct ubpf_reg_state *regs) {
 
   regs[10] = FRAME_PTR;
   regs[1] = PTR_TO_NM_BDG_FWD;
-  regs[2] = PTR_TO_DST_RING;
+  regs[2] = PTR_TO_DST_RING_IDX;
   regs[3] = PTR_TO_NM_VP_ADAPTER;
 }
+
+static void check_alu_op(struct ubpf_reg_state *regs, struct ebpf_inst *insts) {
+  uint8_t opcode = EBPF_OP(inst->code);
 
 int type_tracking(const struct ebpf_inst *insts, uint32_t num_insts) {
   struct ubpf_reg_state regs[10];
@@ -200,112 +201,24 @@ int type_tracking(const struct ebpf_inst *insts, uint32_t num_insts) {
     int new_pc;
     bool store = false;
 
-    switch (inst.opcode) {
-      case EBPF_OP_ADD_IMM:
-      case EBPF_OP_ADD_REG:
-      case EBPF_OP_SUB_IMM:
-      case EBPF_OP_SUB_REG:
-      case EBPF_OP_MUL_IMM:
-      case EBPF_OP_MUL_REG:
-      case EBPF_OP_DIV_REG:
-      case EBPF_OP_OR_IMM:
-      case EBPF_OP_OR_REG:
-      case EBPF_OP_AND_IMM:
-      case EBPF_OP_AND_REG:
-      case EBPF_OP_LSH_IMM:
-      case EBPF_OP_LSH_REG:
-      case EBPF_OP_RSH_IMM:
-      case EBPF_OP_RSH_REG:
-      case EBPF_OP_NEG:
-      case EBPF_OP_MOD_REG:
-      case EBPF_OP_XOR_IMM:
-      case EBPF_OP_XOR_REG:
-      case EBPF_OP_MOV_IMM:
-      case EBPF_OP_MOV_REG:
-      case EBPF_OP_ARSH_IMM:
-      case EBPF_OP_ARSH_REG:
-          break;
+    switch (EBPF_CLS(inst.opcode)) {
+      case EBPF_CLS_ALU:
+      case EBPF_CLS_ALU64:
+        break;
 
-      case EBPF_OP_LE:
-      case EBPF_OP_BE:
-          break;
+      case EBPF_CLS_LD:
+      case EBPF_CLS_LDX:
+        break;
 
-      case EBPF_OP_ADD64_IMM:
-      case EBPF_OP_ADD64_REG:
-      case EBPF_OP_SUB64_IMM:
-      case EBPF_OP_SUB64_REG:
-      case EBPF_OP_MUL64_IMM:
-      case EBPF_OP_MUL64_REG:
-      case EBPF_OP_DIV64_REG:
-      case EBPF_OP_OR64_IMM:
-      case EBPF_OP_OR64_REG:
-      case EBPF_OP_AND64_IMM:
-      case EBPF_OP_AND64_REG:
-      case EBPF_OP_LSH64_IMM:
-      case EBPF_OP_LSH64_REG:
-      case EBPF_OP_RSH64_IMM:
-      case EBPF_OP_RSH64_REG:
-      case EBPF_OP_NEG64:
-      case EBPF_OP_MOD64_REG:
-      case EBPF_OP_XOR64_IMM:
-      case EBPF_OP_XOR64_REG:
-      case EBPF_OP_MOV64_IMM:
-      case EBPF_OP_MOV64_REG:
-      case EBPF_OP_ARSH64_IMM:
-      case EBPF_OP_ARSH64_REG:
-          break;
+      case EBPF_CLS_ST:
+      case EBPF_CLS_STX:
+        break;
 
-      case EBPF_OP_LDXW:
-      case EBPF_OP_LDXH:
-      case EBPF_OP_LDXB:
-      case EBPF_OP_LDXDW:
-          break;
-
-      case EBPF_OP_STW:
-      case EBPF_OP_STH:
-      case EBPF_OP_STB:
-      case EBPF_OP_STDW:
-      case EBPF_OP_STXW:
-      case EBPF_OP_STXH:
-      case EBPF_OP_STXB:
-      case EBPF_OP_STXDW:
-          store = true;
-          break;
-
-      case EBPF_OP_LDDW:
-          break;
-
-      case EBPF_OP_JA:
-      case EBPF_OP_JEQ_REG:
-      case EBPF_OP_JEQ_IMM:
-      case EBPF_OP_JGT_REG:
-      case EBPF_OP_JGT_IMM:
-      case EBPF_OP_JGE_REG:
-      case EBPF_OP_JGE_IMM:
-      case EBPF_OP_JSET_REG:
-      case EBPF_OP_JSET_IMM:
-      case EBPF_OP_JNE_REG:
-      case EBPF_OP_JNE_IMM:
-      case EBPF_OP_JSGT_IMM:
-      case EBPF_OP_JSGT_REG:
-      case EBPF_OP_JSGE_IMM:
-      case EBPF_OP_JSGE_REG:
-          break;
-
-      case EBPF_OP_CALL:
-          break;
-
-      case EBPF_OP_EXIT:
-          break;
-
-      case EBPF_OP_DIV_IMM:
-      case EBPF_OP_MOD_IMM:
-      case EBPF_OP_DIV64_IMM:
-      case EBPF_OP_MOD64_IMM:
-          break;
+      case EBPF_CLS_JMP:
+        break;
 
       default:
-          return false;
+        return false;
     }
   }
 }
